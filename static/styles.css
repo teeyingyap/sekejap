@@ -1,0 +1,138 @@
+nav .navbar-brand
+{
+    /* size for brand */
+    font-size: xx-large;
+}
+
+/* colors for brand */
+nav .navbar-brand .blue
+{
+    color: #537fbe;
+}
+nav .navbar-brand .red
+{
+    color: #ea433b;
+}
+nav .navbar-brand .yellow
+{
+    color: #f5b82e;
+}
+nav .navbar-brand .green
+{
+    color: #2e944b;
+}
+
+main .form-control
+{
+    /* center form controls */
+    display: inline-block;
+
+    /* override Bootstrap's 100% width for form controls */
+    width: auto;
+}
+
+main
+{
+    /* scroll horizontally as needed */
+    overflow-x: auto;
+
+    /* center contents */
+    text-align: center;
+}
+
+main img
+{
+    /* constrain images on small screens */
+    max-width: 100%;
+}
+
+
+.radio-bar input[type="radio"]
+{
+  opacity: 0;
+  position: fixed;
+  width: 0;
+}
+
+.radio-bar label
+{
+    display: inline-block;
+    background-color: #ddd;
+    padding: 10px 20px;
+    font-family: sans-serif, Arial;
+    font-size: 16px;
+    border: 2px solid #444;
+    border-radius: 4px;
+    margin: 1em 1em 1em 1em;
+
+}
+
+.radio-bar input[type="radio"]:checked + label
+{
+    background-color:#aa7eed;
+    border-color: #aa7eed;
+}
+
+.radio-bar input[type="radio"]:focus + label
+{
+    border: 2px dashed #444;
+}
+
+
+.radio-bar label:hover
+{
+      background-color: #aa7eed;
+}
+
+.black {
+    font-size: 2em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
+
+.grey {
+    color: #4287f5;
+    font-size: 2em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+}
+
+
+.marquee {
+    height: 50px;
+    overflow: hidden;
+    position: relative;
+    color: #333;
+
+
+    --translateangleX: 50%;
+    /*--translateangleY: 50%;*/
+}
+
+.marquee form {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    font-weight: bold;
+    margin: 0;
+    line-height: 50px;
+    text-align: center;
+    /*-webkit-marquee: auto medium infinite alternate normal;*/
+    transform: translateX(50%);
+    animation: marquee 10s linear infinite alternate;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(var(--translateangleX));
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
