@@ -11,6 +11,7 @@ from helpers import apology, login_required
 
 # Configure application
 app = Flask(__name__)
+secret_key_value = os.environ.get('SECRET_KEY', None)
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -28,9 +29,14 @@ def after_request(response):
 app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+app.config['SECRET_KEY'] = secret_key_value
 Session(app)
 
 db = SQL("sqlite:///sekejap.db")
+
+# important 
+
+# set FLASK_APP=application.py before running flask run
 
 def load_csv():
     # only load csv once
@@ -82,11 +88,16 @@ def load_kata():
 @app.route("/")
 @login_required
 def index():
+    if 'user_id' in session:
+        print("Logged in as", session["user_id"])
+    else:
+        print("You are not logged in")
+
     rows = db.execute("SELECT * FROM users WHERE id = :id",
                           id=session["user_id"])
 
     load_csv()
-    return render_template("index.html", rows=rows)
+    return render_template("index.html", rows=rows, value=secret_key_value)
 
 
 @app.route("/vocab", methods=["GET", "POST"])
