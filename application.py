@@ -32,6 +32,9 @@ Session(app)
 
 db = SQL("sqlite:///sekejap.db")
 
+app.secret_key = '\xc1\xc2/\xcaDm\xa1~\xbcK\x1fK\xba\x7f\x97\xd9\xe1H|\x16\x9c\x8c\x0e\n'
+
+
 def load_csv():
     # only load csv once
     # and also i have to update done to zero
@@ -82,6 +85,11 @@ def load_kata():
 @app.route("/")
 @login_required
 def index():
+    if 'user_id' in session:
+        print("Logged in as", session["user_id"])
+    else:
+        print("You are not logged in")
+
     rows = db.execute("SELECT * FROM users WHERE id = :id",
                           id=session["user_id"])
 
