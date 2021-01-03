@@ -12,7 +12,6 @@ from helpers import apology, login_required
 # Configure application
 app = Flask(__name__)
 secret_key_value = os.environ.get('SECRET_KEY', None)
-# r = redis.from_url(os.environ.get("REDIS_URL"))
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -26,21 +25,31 @@ def after_request(response):
     return response
 
 
+# production
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.from_url(os.environ.get("REDIS_URL"))
+app.config['SECRET_KEY'] = secret_key_value
+
+# local
 # Configure session to use filesystem (instead of signed cookies)
 # app.config["SESSION_FILE_DIR"] = mkdtemp()
 # app.config["SESSION_PERMANENT"] = False
 # app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_TYPE"] = "redis"
-app.config["SESSION_REDIS"] = redis.from_url(os.environ.get("REDIS_URL"))
-app.config['SECRET_KEY'] = secret_key_value
-# sess = Session()
-# sess.init_app(app)
+
 Session(app)
 
 db = SQL("sqlite:///sekejap.db")
 
+# to run on local:
+# set FLASK_APP=application.py
+# then flask run
 
-def load_csv():
+
+# file system session does not work on heroku
+# - therefore use redis for production
+
+
+def load_kata_csv():
     # only load csv once
     # and also i have to update done to zero
     db.execute("UPDATE words SET done = :done", done=0)
@@ -55,6 +64,18 @@ def load_csv():
         for row in input_file:
             db.execute("INSERT INTO words (katakana, english) VALUES(:katakana, :english)", katakana=row['katakana'], english=row['english'])
 
+
+
+def load_hira_csv():
+    # only load csv once
+    # and also i have to update done to zero
+    db.execute("UPDATE hiravocab SET done = :done", done=0)
+
+    rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=23)
+    if len(rows) != 1:
+        input_file = csv.DictReader(open('hira_list.csv'))
+        for row in input_file:
+            db.execute("INSERT INTO hiravocab (hiragana, english, kanji) VALUES(:hiragana, :english, :kanji)", hiragana=row['hiragana'], english=row['english'], kanji=row['kanji'])
 
 
 def calculate_streak():
@@ -72,7 +93,7 @@ def calculate_streak():
 
 def load_kata():
     db.execute("UPDATE kata SET done = :done", done=0)
-    word_list = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','ガ','ギ','グ','ゲ','ゴ','サ','シ','ス','セ','ソ',
+    kata_list = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','ガ','ギ','グ','ゲ','ゴ','サ','シ','ス','セ','ソ',
                     'ザ','ジ','ズ','ゼ','ゾ','タ','チ','ツ','テ','ト','ダ','ヂ','ヅ','デ','ド','ナ','ニ','ヌ','ネ','ノ',
                     'ハ','ヒ','フ','ヘ','ホ','バ','ビ','ブ','ベ','ボ','パ','ピ','プ','ペ','ポ','マ','ミ','ム','メ','モ',
                     'ヤ','ワ','ユ','ン','ヨ','ラ','リ','ル','レ', 'ロ']
@@ -82,9 +103,27 @@ def load_kata():
                     'ya','wa','yu','n','yo','ra','ri','ru','re','ro']
     rows = db.execute("SELECT * FROM kata WHERE id = :id", id=10)
     if len(rows) != 1:
-        for i in range(len(word_list)):
-            db.execute("INSERT INTO kata (char, romaji) VALUES(:char, :romaji)", char=word_list[i], romaji=romaji_list[i])
+        for i in range(len(kata_list)):
+            db.execute("INSERT INTO kata (char, romaji) VALUES(:char, :romaji)", char=kata_list[i], romaji=romaji_list[i])
 
+
+
+
+def load_hira():
+    db.execute("UPDATE hira SET done = :done", done=0)
+    hira_list = ['あ','い','う','え','お','か','き','く','け','こ','が','ぎ','ぐ','げ','ご','さ','し','す','せ','そ',
+                'ざ','じ','ず','ぜ','ぞ','た','ち','つ','て','と','だ','ぢ','づ','で','ど','な','に','ぬ','ね','の',
+                'は','ひ','ふ','へ','ほ','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ','ま','み','む','め',
+                'も','や','わ','ゆ','ん','よ','ら','り','る','れ','ろ','を']
+    romaji_list = ['a','i','u','e','o','ka','ki','ku','ke','ko','ga','gi','gu','ge','go','sa','shi','su','se','so',
+                    'za','ji','zu','ze','zo','ta','chi','tsu','te','to','da','ji','zu','de','do','na','ni','nu','ne','no',
+                    'ha','hi','hu','he','ho','ba','bi','bu','be','bo','pa','pi','pu','pe','po','ma','mi','mu','me','mo',
+                    'ya','wa','yu','n','yo','ra','ri','ru','re','ro','wo']
+    
+    rows = db.execute("SELECT * FROM hira WHERE id = :id", id=10)
+    if len(rows) != 1:
+        for i in range(len(hira_list)):
+            db.execute("INSERT INTO hira (char, romaji) VALUES(:char, :romaji)", char=hira_list[i], romaji=romaji_list[i])
 
 
 @app.route("/")
@@ -93,7 +132,8 @@ def index():
     rows = db.execute("SELECT * FROM users WHERE id = :id",
                           id=session["user_id"])
 
-    load_csv()
+    load_kata_csv()
+    load_hira_csv()
     return render_template("index.html", rows=rows)
 
 
@@ -107,12 +147,13 @@ def vocab():
         submitted_answer = request.form.get("answer")
         answer_key = request.form.get("anskey")
         full_answer = request.form.get("fullans")
+        romaji = request.form.get("romaji")
 
         print("ans key:", answer_key)
         print("submit:", submitted_answer)
         if submitted_answer == answer_key:
             print("current streak:")
-            flash('You got it! The katakana was ' + full_answer, 'info')
+            flash('You got it! The katakana was ' + full_answer +' (' + romaji + ')', 'info')
             db.execute("UPDATE users SET score = :score WHERE id = :id", score=rows[0]["score"]+1, id=session["user_id"])
             session["streak"].append(1)
             print("correct, and streak list", session["streak"])
@@ -122,7 +163,7 @@ def vocab():
                 db.execute("UPDATE users SET streak = :streak WHERE id = :id", streak=current_streak, id=session["user_id"])
         else:
             # update streak only when i answer wrong
-            flash('Good try! The katakana was ' + full_answer, 'warning')
+            flash('Good try! The katakana was ' + full_answer +' (' + romaji + ')', 'warning')
             session["streak"].append(0)
             print("wrong, and streak list", session["streak"])
             current_streak = calculate_streak()
@@ -134,11 +175,11 @@ def vocab():
     else:
         # after post, i render the same page again, with another random number, check whether done is 0 or not
         # if its zero, then we can show the question
-        question_id = random.randint(1,61)
+        question_id = random.randint(1,84)
         question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
 
         while question_rows[0]['done'] == 1:
-            question_id = random.randint(1,61)
+            question_id = random.randint(1,84)
             question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
 
 
@@ -172,6 +213,82 @@ def vocab():
         return render_template("vocab.html", question_rows=question_rows, keys=keys, answer_key=answer_key)
 
 
+@app.route("/hiragana_vocab", methods=["GET", "POST"])
+@login_required
+def hiragana_vocab():
+    if request.method == "POST":
+        rows = db.execute("SELECT * FROM users WHERE id = :id",
+                          id=session["user_id"])
+        prev_streak = rows[0]["streak"]
+        submitted_answer = request.form.get("answer")
+        answer_key = request.form.get("anskey")
+        full_answer = request.form.get("fullans")
+        romaji = request.form.get("romaji")
+
+        print("ans key:", answer_key)
+        print("submit:", submitted_answer)
+        if submitted_answer == answer_key:
+            print("current streak:")
+            flash('You got it! The hiragana was ' + full_answer +' (' + romaji + ')', 'info')
+            db.execute("UPDATE users SET score = :score WHERE id = :id", score=rows[0]["score"]+1, id=session["user_id"])
+            session["streak"].append(1)
+            print("correct, and streak list", session["streak"])
+            current_streak = calculate_streak()
+            print("current_streak is", current_streak)
+            if current_streak > prev_streak:
+                db.execute("UPDATE users SET streak = :streak WHERE id = :id", streak=current_streak, id=session["user_id"])
+        else:
+            # update streak only when i answer wrong
+            flash('Good try! The hiragana was ' + full_answer +' (' + romaji + ')', 'warning')
+            session["streak"].append(0)
+            print("wrong, and streak list", session["streak"])
+            current_streak = calculate_streak()
+            print("current_streak is", current_streak)
+            if current_streak > prev_streak:
+                db.execute("UPDATE users SET streak = :streak WHERE id = :id", streak=current_streak, id=session["user_id"])
+
+        return redirect("/hiragana_vocab")
+    else:
+        # after post, i render the same page again, with another random number, check whether done is 0 or not
+        # if its zero, then we can show the question
+        question_id = random.randint(1,23)
+        question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
+
+        while question_rows[0]['done'] == 1:
+            question_id = random.randint(1,23)
+            question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
+
+
+        # change done to 1 after selecting
+        db.execute("UPDATE hiravocab SET done = :done WHERE id = :id", done=1, id=question_id)
+
+        #make answer rows
+        answer_list = ['あ','い','う','え','お','か','き','く','け','こ','が','ぎ','ぐ','げ','ご','さ','し','す','せ','そ',
+                'ざ','じ','ず','ぜ','ぞ','た','ち','つ','て','と','だ','ぢ','づ','で','ど','な','に','ぬ','ね','の',
+                'は','ひ','ふ','へ','ほ','ば','び','ぶ','べ','ぼ','ぱ','ぴ','ぷ','ぺ','ぽ','ま','み','む','め',
+                'も','や','わ','ゆ','ん','よ','ら','り','る','れ','ろ','を']
+
+        print(question_rows[0]['hiragana'])
+        print(len(question_rows[0]['hiragana']))
+
+        answer_index = random.randint(0, len(question_rows[0]['hiragana'])-1)
+        print(answer_index)
+        answer_key = question_rows[0]['hiragana'][answer_index]
+        print("the answer key is", answer_key)
+        # sample must not include answer key
+        keys = []
+        keys.append(answer_key)
+        while len(keys) < 8:
+            key = random.choice(answer_list)
+            if key != answer_key:
+                keys.append(key)
+
+        random.shuffle(keys)
+
+        print(keys)
+        return render_template("hiragana_vocab.html", question_rows=question_rows, keys=keys, answer_key=answer_key)
+
+
 
 @app.route("/memory", methods=["GET", "POST"])
 @login_required
@@ -179,37 +296,65 @@ def memory():
     if request.method == "POST":
         submitted_answer = request.form.get("answer")
         answer_key = request.form.get("anskey")
+        romaji = request.form.get("romaji")
         print("submitted:", submitted_answer)
         print("anskey", answer_key)
         if submitted_answer == answer_key:
-            flash('Correct! The katakana was ' + answer_key, 'info')
+            flash('Correct! It was ' + answer_key +' (' + romaji + ')', 'info')
         else:
-            flash('Wrong! The katakana was ' + answer_key, 'warning')
+            flash('Wrong! It was ' + answer_key +' (' + romaji + ')', 'warning')
         return redirect("/memory")
     else:
         load_kata()
+        load_hira()
 
-        question_id = random.randint(1,70)
-        question_rows = db.execute("SELECT * FROM kata WHERE id = :id", id=question_id)
+        hira_kata = 0
+        # hira = 1, kata = 0
 
-        while question_rows[0]['done'] == 1:
+        if random.randint(0, 1) == 0:
             question_id = random.randint(1,70)
             question_rows = db.execute("SELECT * FROM kata WHERE id = :id", id=question_id)
 
-        answer = question_rows[0]['char']
-        romaji_question = question_rows[0]['romaji']
-        print(answer, romaji_question)
-        options = []
-        options.append(answer)
-        while len(options) < 8:
-            question_rows = db.execute("SELECT * FROM kata WHERE id = :id", id=random.randint(1,70))
-            option = question_rows[0]['char']
-            if option != answer:
-                options.append(option)
+            while question_rows[0]['done'] == 1:
+                question_id = random.randint(1,70)
+                question_rows = db.execute("SELECT * FROM kata WHERE id = :id", id=question_id)
 
-        random.shuffle(options)
+            answer = question_rows[0]['char']
+            romaji_question = question_rows[0]['romaji']
+            print(answer, romaji_question)
+            options = []
+            options.append(answer)
+            while len(options) < 6:
+                question_rows = db.execute("SELECT * FROM kata WHERE id = :id", id=random.randint(1,70))
+                option = question_rows[0]['char']
+                if option != answer:
+                    options.append(option)
 
-        print(options)
+            random.shuffle(options)
+
+            print(options)
+        else:
+            question_id = random.randint(1,71)
+            question_rows = db.execute("SELECT * FROM hira WHERE id = :id", id=question_id)
+
+            while question_rows[0]['done'] == 1:
+                question_id = random.randint(1,71)
+                question_rows = db.execute("SELECT * FROM hira WHERE id = :id", id=question_id)
+
+            answer = question_rows[0]['char']
+            romaji_question = question_rows[0]['romaji']
+            print(answer, romaji_question)
+            options = []
+            options.append(answer)
+            while len(options) < 6:
+                question_rows = db.execute("SELECT * FROM hira WHERE id = :id", id=random.randint(1,71))
+                option = question_rows[0]['char']
+                if option != answer:
+                    options.append(option)
+
+            random.shuffle(options)
+
+            print(options)
 
 
         return render_template("memory.html", question_rows=question_rows, options=options)

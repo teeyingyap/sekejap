@@ -1,27 +1,29 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Katakana Vocabulary Practice
+    Hiragana Vocabulary Practice
 {% endblock %}
 
 {% block main %}
 
-    <h4>Test your katakana skills.</h4>
+    <h4>Test your hiragana skills.</h4>
     <div>
-        {% for char in question_rows[0]['katakana'] %}
+        {% for char in question_rows[0]['hiragana'] %}
             {% if char != answer_key %}
                 <span class="black">{{ char }}</span>
             {% else %}
                 <span class="grey">[ _ ]</span>
 
             {% endif %}
+
         {% endfor %}
+        <span class="black">({{ question_rows[0]['kanji'] }})</span>
 
         <h2>{{ question_rows[0]['english'] }}</h2>
     </div>
 
 
-    <form action="/vocab" onsubmit="check();" method="post" id="my-form">
+    <form action="/hiragana_vocab" onsubmit="check();" method="post" id="my-form">
         <div class="form-row">
         <div class="col-md-6 offset-md-3">
             <div class="form-group form-check form-check-inline radio-bar">
@@ -48,7 +50,7 @@
             <input class="form-control" type="hidden" name="anskey" value="{{answer_key}}">
         </div>
         <div class="form-group">
-            <input class="form-control" type="hidden" name="fullans" value="{{ question_rows[0]['katakana']}}">
+            <input class="form-control" type="hidden" name="fullans" value="{{ question_rows[0]['hiragana']}}">
         </div>
         <div class="form-group">
             <input class="form-control" type="hidden" name="romaji" value="{{ question_rows[0]['english']}}">

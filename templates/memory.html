@@ -13,6 +13,7 @@
     <div class="marquee">
         <form action="/memory" onsubmit="check();" method="post">
             <input class="form-control" type="hidden" name="anskey" value="{{question_rows[0]['char']}}">
+            <input class="form-control" type="hidden" name="romaji" value="{{question_rows[0]['romaji']}}">
             <button class="btn btn-primary" type="submit" name="answer" value="{{ option }}">{{ option }}</button>
 
 

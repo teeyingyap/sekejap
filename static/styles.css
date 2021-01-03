@@ -136,3 +136,10 @@ main img
         transform: translateX(-50%);
     }
 }
+
+
+.alert
+{
+    margin-bottom: 0em;
+    padding: 0.55rem 1.25rem;
+}
