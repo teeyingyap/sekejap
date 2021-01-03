@@ -1,4 +1,4 @@
-import os, csv, random
+import os, csv, random, redis
 
 from cs50 import SQL
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
@@ -12,6 +12,7 @@ from helpers import apology, login_required
 # Configure application
 app = Flask(__name__)
 secret_key_value = os.environ.get('SECRET_KEY', None)
+# r = redis.from_url(os.environ.get("REDIS_URL"))
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -26,10 +27,14 @@ def after_request(response):
 
 
 # Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
+# app.config["SESSION_FILE_DIR"] = mkdtemp()
+# app.config["SESSION_PERMANENT"] = False
+# app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_TYPE"] = "redis"
+app.config["SESSION_REDIS"] = redis.from_url(os.environ.get("REDIS_URL"))
 app.config['SECRET_KEY'] = secret_key_value
+# sess = Session()
+# sess.init_app(app)
 Session(app)
 
 db = SQL("sqlite:///sekejap.db")
@@ -85,16 +90,11 @@ def load_kata():
 @app.route("/")
 @login_required
 def index():
-    if 'user_id' in session:
-        print("Logged in as", session["user_id"])
-    else:
-        print("You are not logged in")
-
     rows = db.execute("SELECT * FROM users WHERE id = :id",
                           id=session["user_id"])
 
     load_csv()
-    return render_template("index.html", rows=rows, value=secret_key_value)
+    return render_template("index.html", rows=rows)
 
 
 @app.route("/vocab", methods=["GET", "POST"])
