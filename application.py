@@ -34,9 +34,6 @@ Session(app)
 
 db = SQL("sqlite:///sekejap.db")
 
-# important 
-
-# set FLASK_APP=application.py before running flask run
 
 def load_csv():
     # only load csv once
