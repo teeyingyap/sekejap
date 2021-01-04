@@ -48,13 +48,16 @@ db = SQL("sqlite:///sekejap.db")
 # file system session does not work on heroku
 # - therefore use redis for production
 
+total_hira_vocab = 23
+total_kata_vocab = 84
+
 
 def load_kata_csv():
     # only load csv once
     # and also i have to update done to zero
     db.execute("UPDATE words SET done = :done", done=0)
 
-    rows = db.execute("SELECT * FROM words WHERE id = :id", id=84)
+    rows = db.execute("SELECT * FROM words WHERE id = :id", id=total_kata_vocab)
     if len(rows) != 1:
         input_file = csv.DictReader(open('kata_list.csv'))
             # with open('kata_list.csv', newline='') as csvfile:
@@ -71,7 +74,7 @@ def load_hira_csv():
     # and also i have to update done to zero
     db.execute("UPDATE hiravocab SET done = :done", done=0)
 
-    rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=23)
+    rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=total_hira_vocab)
     if len(rows) != 1:
         input_file = csv.DictReader(open('hira_list.csv'))
         for row in input_file:
@@ -175,12 +178,12 @@ def vocab():
     else:
         # after post, i render the same page again, with another random number, check whether done is 0 or not
         # if its zero, then we can show the question
-        question_id = random.randint(1,84)
+        question_id = random.randint(1,total_kata_vocab)
         question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
 
         if question_rows[0]['done'] == 1:
             while True:
-                question_id = random.randint(1,84)
+                question_id = random.randint(1,total_kata_vocab)
                 question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
                 if question_rows[0]['done'] == 0:
                     break
@@ -254,13 +257,13 @@ def hiragana_vocab():
     else:
         # after post, i render the same page again, with another random number, check whether done is 0 or not
         # if its zero, then we can show the question
-        question_id = random.randint(1,23)
+        question_id = random.randint(1,total_hira_vocab)
         question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
 
 
         if question_rows[0]['done'] == 1:
             while True:
-                question_id = random.randint(1,84)
+                question_id = random.randint(1,total_hira_vocab)
                 question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
                 if question_rows[0]['done'] == 0:
                     break
