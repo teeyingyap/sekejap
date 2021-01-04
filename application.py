@@ -54,7 +54,7 @@ def load_kata_csv():
     # and also i have to update done to zero
     db.execute("UPDATE words SET done = :done", done=0)
 
-    rows = db.execute("SELECT * FROM words WHERE id = :id", id=61)
+    rows = db.execute("SELECT * FROM words WHERE id = :id", id=84)
     if len(rows) != 1:
         input_file = csv.DictReader(open('kata_list.csv'))
             # with open('kata_list.csv', newline='') as csvfile:
@@ -178,9 +178,12 @@ def vocab():
         question_id = random.randint(1,84)
         question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
 
-        while question_rows[0]['done'] == 1:
-            question_id = random.randint(1,84)
-            question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
+        if question_rows[0]['done'] == 1:
+            while True:
+                question_id = random.randint(1,84)
+                question_rows = db.execute("SELECT * FROM words WHERE id = :id", id=question_id)
+                if question_rows[0]['done'] == 0:
+                    break
 
 
         # change done to 1 after selecting
@@ -254,9 +257,13 @@ def hiragana_vocab():
         question_id = random.randint(1,23)
         question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
 
-        while question_rows[0]['done'] == 1:
-            question_id = random.randint(1,23)
-            question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
+
+        if question_rows[0]['done'] == 1:
+            while True:
+                question_id = random.randint(1,84)
+                question_rows = db.execute("SELECT * FROM hiravocab WHERE id = :id", id=question_id)
+                if question_rows[0]['done'] == 0:
+                    break
 
 
         # change done to 1 after selecting
